@@ -290,5 +290,7 @@ int main()
         fly = fly->next;
     }   
     //Read_airports();
+    
+    printf("EU SOU FODA");
     return 0;
 }
