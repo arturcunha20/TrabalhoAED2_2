@@ -6,14 +6,14 @@
 #include <math.h>
 #include <stdbool.h>
 
-#define M 15
+#define M 5000
 
 typedef struct _flights {
-    char aofd[1000];
+    char* aofd;
     float distance;
     float duration;
-    char type[1000];
-    char aofa[1000];
+    char* type;
+    char* aofa;
     struct _flights *next;
 }Flights;
 
@@ -26,7 +26,6 @@ typedef struct _airports {
 }Airports;
 
 int hash_func(const char* x) {
-   // 0 -- M  [0, M[
    int tot = 0, len = strlen(x);
    for (int i = 0; i < len; i++) {
        tot += x[i];
@@ -34,7 +33,7 @@ int hash_func(const char* x) {
    return tot % M;
 }
 
-Flights * insert_flights_(Flights* lst, char aofd[], float distance, float duration, char type[], char aofa[]) {
+Flights * insert_flights_(Flights* lst, const char *aofd, float distance, float duration,const char *type, const char *aofa) {
     Flights *rec = malloc(sizeof(Flights));
     strcpy(rec->aofd, aofd);
     strcpy(rec->aofa, aofa);
@@ -53,53 +52,95 @@ void listar_flights(Flights* lst)
     }
 }
 
-void set_Flight(Airports **hash, const char city[], const char country[],const char code[]) {
+void set_Flight(Airports **hash, const char *city, const char *country,const char *code) {
     int h = hash_func(code);
     Airports *ptr = hash[h];
     while (ptr && strcmp(ptr->Code,code) != 0)  ptr = ptr->next;
-    if (ptr) strcpy(ptr->Country,country);
-    else { 
-        // Este ID é novo (não aparece como partida de nenhuma relação)
-        Airports *p = malloc(sizeof(Airports));
+    if (ptr) 
+    {
+        ptr->Country = strdup(country);
+        ptr->City = strdup(city);
+    }
+    else 
+    { 
+        Airports *p = (Airports*) malloc(sizeof(Airports));
         p->Country = strdup(country);
-        p->City = strdup(city);
         p->Code = strdup(code);
+        p->City = strdup(city);
         p->flights = NULL;
-        p->next = hash[h];  // insercao à cabeça 
-        hash[h] = p;    // atualizar o hash
+        p->next = hash[h];  
+        hash[h] = p;   
     }
 }
 
-Airports * insert_Aiport(Airports *lst, char code[],char aofd[], float distance, float duration, char type[], char aofa[]) {
-    if (lst == NULL || (strcmp(lst->Code,code) == 0) ) {
-        // Insert Product?
-        if (!lst) {
-            lst = malloc(sizeof(Airports));
-            lst->Country = NULL;
-            lst->City = NULL;
-            lst->Code = code;
-            lst->flights = NULL;
-        }
-        // Insert Suggestion
-        lst->flights = insert_flights_(lst->flights, aofd, distance, duration, type, aofa);
+Airports * insert_Aiport(Airports *lst,const char *aofd, float distance, float duration,const char *type, const char *aofa) {
+    Airports *ptr = lst;
+
+    while (ptr && strcmp(ptr->Code,aofd) != 0) ptr = ptr->next;
+
+    if(ptr == NULL)
+    {
+        ptr = (Airports*) malloc(sizeof(Airports));
+        ptr->Code = strdup(aofd);
+        ptr->City = NULL;
+        ptr->Country = NULL;
+        ptr->flights = NULL;
+        ptr->next = lst;
+        lst = ptr;
     }
-    else {
-        lst->next = insert_Aiport(lst->next, code, aofd, distance, duration, type, aofa);
-    }
+    Flights *cel = (Flights*) malloc(sizeof(Flights));
+
+    cel->aofa = strdup(aofa);
+    cel->aofd = strdup(aofd);
+    cel->type = strdup(type); 
+    cel->distance = distance;
+    cel->duration = duration;
+    cel->next = ptr->flights;
+    ptr->flights = cel;
+
     return lst;
 }
 
-void hash_insert(Airports **hash, char code[],char aofd[], float distance, float duration, char type[], char aofa[]) {
-    int h = hash_func(code);
-    hash[h] = insert_Aiport(hash[h], code, aofd, distance, duration, type, aofa);
+void hash_insert(Airports **hash, const char *aofd, float distance, float duration,const char *type, const char *aofa) {
+    int h = hash_func(aofd);
+    hash[h] = insert_Aiport(hash[h], aofd, distance, duration, type, aofa);
 }
 
-Airports *search_airpots(Airports **hash, const char code[]) {
-    //printf("Estou aqui");
+Airports *search_airpots(Airports **hash, const char *code) {
     int h = hash_func(code);
     Airports *ptr = hash[h];
     while (ptr && (strcmp(ptr->Code,code)!=0)) ptr = ptr->next;
     return ptr;
+}
+
+Airports *search_airpots_Country(Airports **hash, const char *country) {
+    Airports *a = NULL;
+    bool HEHE = false;
+    for(int i = 0;i <= M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            if(strcmp(ptr->Country,country) == 0)
+            {
+                printf("ENCONTREI CRLH");
+                a = ptr;
+                HEHE = true;
+                break;
+            }
+            ptr = ptr->next;
+        }
+        if(HEHE ==  true)
+        {
+            break;
+        }
+    }
+
+    if(HEHE ==  true)
+    {
+        
+    }
+
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -124,11 +165,13 @@ void * Read_flights_PT(Airports **hash)
         fgets(string,1000,file);
         if(i > 0)
         {
-            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t",&aofd, &distance, &duration, &type, &aofa);
+            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t",aofd, distance, duration, type, aofa);
             strtok(aofa,"\n");
             distance_ = atof(distance);
             duration_ = atof(duration);
-            hash_insert(hash, aofd , aofd, distance_, duration_, type, aofa);
+            //printf("--> %s | %d\n",string,hash_func(aofd));
+            hash_insert(hash, aofd, distance_, duration_, type, aofa);
+
         }
         i++;
     }
@@ -149,19 +192,17 @@ void * Read_airports_PT(Airports **hash)
         fgets(string,1000,file);
         if(i > 0)
         {
-            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t",&city, &country, &code);
+            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t",city, country, code);
             strtok(code,"\n");
-            printf("%s",string);
+            //printf("%s",string);
             set_Flight(hash,city,country,code);
-            //printf("Eu sou lindo");
         }
         i++;
     }
     fclose(file);
-
 }
 
-void * Read_airports()
+void * Read_airports(Airports **hash)
 {
     FILE *file;
     int i=0;
@@ -169,50 +210,64 @@ void * Read_airports()
     while (!feof(file))
     {
         char string[1000];
-        char city[1000], Country[1000], code[1000];
+        char city[1000], country[1000], code[1000];
 
         fgets(string,1000,file);
         if(i > 0)
         {
-            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t",&city, &Country, &code);
+            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t",city, country, code);
             strtok(code,"\n");
-            printf("%s",string);
+            //printf("%s",string);
+            set_Flight(hash,city,country,code);
         }
         i++;
     }
     fclose(file);
 }
 
-Flights * Read_flights(Flights *lista)
+void * Read_flights(Airports **hash)
 {
     FILE *file;
     int i=0;
-    file = fopen("Ficheiros/unique_fligts.tsv","r");
+    file = fopen("Ficheiros/unique_fligts.tsv","rt");
     while (!feof(file))
     {
         char string[1000];
-        char aofd[1000], distance[1000], duration[1000], type[1000], aofa[1000];
+        char aofd[1000], type[1000], aofa[1000], distance[1000], duration[1000];
         float distance_,duration_;
-
+       
         fgets(string,1000,file);
         if(i > 0)
         {
-            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t",&aofd, &distance, &duration, &type, &aofa);
+            sscanf(string,"%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t%[^\t]\t",aofd, distance, duration, type, aofa);
             strtok(aofa,"\n");
             distance_ = atof(distance);
             duration_ = atof(duration);
-            lista = insert_flights_(lista, aofd, distance_, duration_, type, aofa);
+            //printf("--> %s | %d\n",string,hash_func(aofd));
+            hash_insert(hash, aofd, distance_, duration_, type, aofa);
         }
         i++;
     }
     fclose(file);
-    return lista;
+}
+
+void listar_voos(Airports **hash)
+{
+    for(int i = 0;i <= M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            printf("%d -> %s \n",i,ptr->Code);
+            ptr = ptr->next;
+        }
+    }
 }
 
 int main() 
 {
     Airports **hash;
-    hash = calloc(M, sizeof(Airports*));
+    hash = (Airports**) calloc(M, sizeof(Airports*));
     Flights *lista_flights_pt;
     //lista_flights_pt = Read_flights_PT(lista_flights_pt);
     //listar_flights(lista_flights_pt);
@@ -221,18 +276,19 @@ int main()
     //lista_flights = Read_flights(lista_flights);
     //listar_flights(lista_flights);
 
-    Read_flights_PT(hash);
-    Read_airports_PT(hash);
+    Read_flights(hash);
+    Read_airports(hash);
+
+    //listar_voos(hash);
 
     Airports *ports = search_airpots(hash, "OPO"); 
     Flights *fly = ports->flights;
-
     while(fly)
     {
-        Airports *recfly = search_airpots(hash,recfly->Code);
-        printf("%s | %s | %s\n",recfly->City,recfly->Country,recfly->Code);
+        //Airports *recfly = search_airpots(hash,recfly->Code);
+        printf("%s | %f | %s\n",fly->aofd,fly->distance,fly->aofa);
+        fly = fly->next;
     }   
     //Read_airports();
-  
     return 0;
 }
