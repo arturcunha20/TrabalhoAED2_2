@@ -599,6 +599,198 @@ void cidade_mais_chegadas(Airports **hash)
     printf("A cidade com mais partidas e %s com %d partidas\n",cidade,max);
 }
 
+void Alterar_duracao_distancia(Airports **hash)
+{
+    char * aofd;
+    char * aofa;
+    char * type;
+    float distancia,duration;
+    int cont=0;
+    aofd = readChar("Diga o AOFD -> ","ERRO");
+    aofa = readChar("Diga o AOFA -> ","ERRO");
+    type = readChar("Diga o Type -> ","ERRO");
+    system("Clear || CLS");
+    Flights *fly = NULL;
+    for(int i = 0;i < M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            fly = ptr->flights;
+            while (fly)
+            {   
+                if(strcmp(fly->aofa,aofa) == 0 && strcmp(fly->aofd,aofd) == 0 && strcmp(fly->type,type) == 0)
+                {
+                    cont++;
+                    printf("Diga a distancia -> "); scanf("%f",&distancia);
+                    printf("Diga a Duration -> "); scanf("%f",&duration);
+                    fly->distance = distancia;
+                    fly->duration = duration;
+                }
+                fly = fly->next;
+            }
+            ptr = ptr->next;
+        }
+    }
+
+    if(cont == 0)
+    {
+        printf("Nao encontrado\n");
+    }
+}
+
+void AdicionarAeroporto(Airports **hash)
+{
+    char *city,*code,*country;
+    bool existe;
+    int cont=0,contCidade = 0;
+
+    city = readChar("Diga a cidade -> ","ERRO");
+
+    for(int i = 0;i < M;i++)
+    {
+        if(cont < 0)
+        {
+            break;
+        }
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            if(strcmp(ptr->City,city)==0)
+            {
+                contCidade++;
+                if(cont == 0)
+                {
+                    code = readChar("Diga o code -> ","ERRO");
+                    existe = exists_in_hash(hash,code);
+                    if(existe == false && cont == 0)
+                    {
+                        hash_insert(hash, code, 0, 0, NULL, NULL); 
+                        set_Flight(hash,city,ptr->Country,code);
+                        cont++;
+                    }
+                    else
+                    {
+                        printf("Ja existe\n");
+                    }
+                }
+
+            }
+            ptr = ptr->next;
+        }
+    }
+
+    if(contCidade == 0)
+    {
+        printf("Essa cidade nao existe\n");
+    }
+    
+}
+
+void ligacao_Air(Airports **hash)
+{
+    char *aofd,*aofa,*type;
+    float duration,distance;
+    int typee=0;
+    bool existe,exitefim;
+    aofd = readChar("Diga o AOFD -> ","ERRO");
+    aofa = readChar("Diga o AOFA -> ","ERRO");
+    printf("Diga a distance -> "); scanf("%f",&distance);
+    printf("Diga a duration -> "); scanf("%f",&duration);
+
+    printf("Diga o type (0 - Normal | 1 - Lowcost ) -> "); scanf("%d",&typee);
+    switch (typee)
+    {
+        case 0: type = strdup("normal"); break;
+        case 1: type = strdup("lowcost"); break;
+        default: type = strdup("normal"); break;
+    }
+
+    existe = exists_in_hash(hash,aofd);
+
+    if(existe == true)
+    {
+        exitefim = exists_in_hash(hash,aofa);
+        if(exitefim == true)
+        {
+            if(strcmp(aofd,aofa)!=0)
+            {
+                hash_insert(hash, aofd, distance, duration, type, aofa); 
+            }
+            else
+            {
+                printf("Impossivel levantar e aterrar no mesmo Airport\n");
+            }
+        }
+        else
+        {
+            printf("Esse Airport de chegada nao existe\n");
+        }     
+    }
+    else 
+    {
+        printf("Esse Airport de partida nao existe\n");
+    }
+}
+
+bool verificar_city(Airports **hash,const char *city)
+{
+    for(int i = 0;i < M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            if(strcmp(ptr->City,city) == 0)
+            {
+                return true;
+            }
+            ptr = ptr->next;
+        }
+    }
+    return false;
+}
+
+void adicionar_city(Airports **hash)
+{
+    bool existe,exite_cod;
+    char *city,*code;
+    city = readChar("Diga a city -> ","ERRO");
+
+    existe = verificar_city(hash,city);
+
+    if(existe == false)
+    {
+        code = readChar("Diga a Code -> ","ERRO");
+        exite_cod = exists_in_hash(hash,code);
+        if(exite_cod == false)
+        {
+            hash_insert(hash, code, 0, 0, NULL, NULL); 
+            set_Flight(hash,city,NULL,code);
+        }
+        else
+        {
+            printf("Esse codigo ja existe\n");
+        }
+    }
+    else
+    {
+        printf("Essa cidade ja existe\n");
+    }
+}
+
+void listar_cidade(Airports **hash)
+{
+    for(int i = 0;i < M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            printf("%s\n",ptr->City);
+            ptr = ptr->next;
+        }
+    }
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -707,7 +899,6 @@ void * Read_flights(Airports **hash)
     fclose(file);
 }
 
-
 int main() 
 {
     int op=0;
@@ -722,33 +913,34 @@ int main()
         system("Clear || CLS");
         printf("Menu:\n");
         printf("1 -> Listar Voos\n");
-        printf("2 -> Custo Aeroporto\n");
-        printf("3 -> Custo Cidade\n");
-        printf("4 -> Mais Partidas\n");
-        printf("5 -> Mais Chegadas\n");
-        printf("6 -> Intenacional\n");
+        printf("2 -> Listar Airposts\n");
+        printf("3 -> Custo Aeroporto\n");
+        printf("4 -> Custo Cidade\n");
+        printf("5 -> Mais Partidas\n");
+        printf("6 -> Mais Chegadas\n");
+        printf("7 -> Intenacional\n");
+        printf("Extras-> \n");
+        printf("8 -> Alterar Duracao e distancia\n");
+        printf("9 -> Adicionar por cidade\n");
+        printf("10 -> Adicionar ligacao\n");
+        printf("11 -> Adicionar Cidade\n");
         printf("0 -> Sair\n");
         printf("Opcao-> "); scanf("%d",&op);
         switch (op)
         {
             case 1: system("Clear || CLS"); listar_voos(hash); system("pause"); break;
-            case 2: system("Clear || CLS"); custo_aeroporto(hash); system("pause"); break;
-            case 3: system("Clear || CLS"); custo_cidade(hash);  system("pause"); break;
-            case 4: system("Clear || CLS"); cidade_mais_partidas(hash);  system("pause"); break;
-            case 5: system("Clear || CLS"); cidade_mais_chegadas(hash);  system("pause"); break;
-            case 6: system("Clear || cls"); internacional(hash); system("pause"); break;
+            case 2: system("Clear || CLS"); listar_voos__(hash); system("pause"); break;
+            case 3: system("Clear || CLS"); custo_aeroporto(hash); system("pause"); break;
+            case 4: system("Clear || CLS"); custo_cidade(hash);  system("pause"); break;
+            case 5: system("Clear || CLS"); cidade_mais_partidas(hash);  system("pause"); break;
+            case 6: system("Clear || CLS"); cidade_mais_chegadas(hash);  system("pause"); break;
+            case 7: system("Clear || cls"); internacional(hash); system("pause"); break;
+            case 8: system("Clear || cls"); Alterar_duracao_distancia(hash); system("pause"); break;
+            case 9: system("Clear || cls"); AdicionarAeroporto(hash); system("pause"); break;
+            case 10: system("Clear || cls"); ligacao_Air(hash); system("pause"); break;
+            case 11: system("Clear || cls"); adicionar_city(hash); system("pause"); break;
         }
-    } while (op < 1 && op > 4 || op != 0);
+    } while (op < 1 && op > 10 || op != 0);
 
-    /*
-    Flights *fly = ports->flights;
-    while(fly)
-    {
-        printf("%s | %f | %s\n",fly->aofd,fly->distance,fly->aofa);
-        fly = fly->next;
-    }  
-    */ 
-
-    //Airports *ports1 = search_airpots_Country(hash, "19082347"); 
     return 0;
 }

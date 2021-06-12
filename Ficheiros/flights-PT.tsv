@@ -1,6 +1,7 @@
 aofd	distance	duration	type	aofa
 OPO	165	166	lowcost	LIS
 OPO	166	166	normal	LIS
+OPO	166	166	normal	FAO
 LIS	168.46	165	normal	OPO
 LIS	167	164	lowcost	OPO
 LIS	149.568089	154	lowcost	FAO
