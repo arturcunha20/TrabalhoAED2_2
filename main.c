@@ -485,7 +485,7 @@ void cidade_mais_partidas(Airports **hash)
         while (ptr)
         {
             Flights * fly = ptr->flights;    
-             while (fly)
+            while (fly)
             {
                 existe = verificar_Aux(aux,fly->aofd);
                 if(existe == false)
@@ -687,12 +687,36 @@ void AdicionarAeroporto(Airports **hash)
     
 }
 
+bool verificar_voo(Airports **hash,const char*aofd,const char*aofa,const char * type)
+{
+    bool existe = false;
+    Flights *fly = NULL;
+    for(int i = 0;i < M;i++)
+    {
+        Airports *ptr = hash[i];
+        while (ptr)
+        {
+            fly = ptr->flights;
+            while (fly)
+            {
+                if(strcmp(fly->aofa,aofa) == 0 && strcmp(fly->aofd,aofd) == 0 && strcmp(fly->type,type) == 0)
+                {
+                    existe = true;
+                }
+                fly = fly->next;
+            }   
+            ptr = ptr->next;
+        }
+    }
+    return existe;
+}
+
 void ligacao_Air(Airports **hash)
 {
     char *aofd,*aofa,*type;
     float duration,distance;
     int typee=0;
-    bool existe,exitefim;
+    bool existe,exitefim,exiteLigacao;
     aofd = readChar("Diga o AOFD -> ","ERRO");
     aofa = readChar("Diga o AOFA -> ","ERRO");
     printf("Diga a distance -> "); scanf("%f",&distance);
@@ -706,31 +730,42 @@ void ligacao_Air(Airports **hash)
         default: type = strdup("normal"); break;
     }
 
-    existe = exists_in_hash(hash,aofd);
 
-    if(existe == true)
+    exiteLigacao = verificar_voo(hash,aofd,aofa,type);
+
+    if(exiteLigacao == false)
     {
-        exitefim = exists_in_hash(hash,aofa);
-        if(exitefim == true)
+        existe = exists_in_hash(hash,aofd);
+
+        if(existe == true)
         {
-            if(strcmp(aofd,aofa)!=0)
+            exitefim = exists_in_hash(hash,aofa);
+            if(exitefim == true)
             {
-                hash_insert(hash, aofd, distance, duration, type, aofa); 
+                if(strcmp(aofd,aofa)!=0)
+                {
+                    hash_insert(hash, aofd, distance, duration, type, aofa); 
+                }
+                else
+                {
+                    printf("Impossivel levantar e aterrar no mesmo Airport\n");
+                }
             }
             else
             {
-                printf("Impossivel levantar e aterrar no mesmo Airport\n");
-            }
+                printf("Esse Airport de chegada nao existe\n");
+            }     
         }
-        else
+        else 
         {
-            printf("Esse Airport de chegada nao existe\n");
-        }     
+            printf("Esse Airport de partida nao existe\n");
+        }
     }
-    else 
+    else
     {
-        printf("Esse Airport de partida nao existe\n");
+        printf("Essa ligacao ja existe\n");
     }
+    
 }
 
 bool verificar_city(Airports **hash,const char *city)
@@ -912,8 +947,8 @@ int main()
     {
         system("Clear || CLS");
         printf("Menu:\n");
-        printf("1 -> Listar Voos\n");
-        printf("2 -> Listar Airposts\n");
+        printf("1 -> Listar Airports\n");
+        printf("2 -> Listar Voos\n");
         printf("3 -> Custo Aeroporto\n");
         printf("4 -> Custo Cidade\n");
         printf("5 -> Mais Partidas\n");
@@ -921,7 +956,7 @@ int main()
         printf("7 -> Intenacional\n");
         printf("Extras-> \n");
         printf("8 -> Alterar Duracao e distancia\n");
-        printf("9 -> Adicionar por cidade\n");
+        printf("9 -> Adicionar Aeroporto por cidade\n");
         printf("10 -> Adicionar ligacao\n");
         printf("11 -> Adicionar Cidade\n");
         printf("0 -> Sair\n");
